@@ -46,6 +46,17 @@ mvn package
 java -jar target/library-1.0.0.jar
 ```
 
+## Demo accounts
+
+Seeded on first run:
+
+| Username | Password | Role | Access |
+|---|---|---|---|
+| admin | admin123 | ADMIN | full, can create librarians via Admin -> Manage members |
+| alice | pass123 | MEMBER | student, can register as member |
+
+Public registration at auth menu creates `MEMBER` only. Librarian accounts are manager-only.
+
 ## Instructions for testing
 
 <!-- TODO: verify after pom and tests exist -->
