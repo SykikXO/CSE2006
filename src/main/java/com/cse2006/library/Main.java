@@ -1,6 +1,6 @@
 package com.cse2006.library;
 import com.cse2006.library.model.*;
-import com.cse2006.library.repo.InMemoryStore;
+import com.cse2006.library.repo.UserStore;
 import com.cse2006.library.service.AuthService;
 import com.cse2006.library.util.Ansi;
 import java.util.Scanner;
@@ -10,9 +10,8 @@ public class Main {
   private User current;
   public Main(AuthService auth) { this.auth = auth; }
   public static void main(String[] args) {
-    InMemoryStore store = new InMemoryStore();
+    UserStore store = new UserStore();
     AuthService auth = new AuthService(store);
-    // seed demo users
     try { auth.register("admin", "admin123", Role.ADMIN); auth.register("alice", "pass123", Role.MEMBER); } catch (Exception ignored) {}
     new Main(auth).loop();
   }
@@ -83,8 +82,8 @@ public class Main {
     header("About", null);
     System.out.println("  CSE2006 Library Management System");
     System.out.println("  Modules: User auth, Catalog, Reporting");
-    System.out.println("  Stack: Java 17, Maven, stdlib only");
-    System.out.println("  Storage: in-memory now, file csv next");
+    System.out.println("  Stack: Java 17, Maven");
+    System.out.println("  Storage: CSV files in data/users");
     System.out.println();
     System.out.println("  Auth: public register creates MEMBER only");
     System.out.println("  Librarian accounts: Admin -> Manage members -> Add librarian");

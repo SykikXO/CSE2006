@@ -1,12 +1,12 @@
 package com.cse2006.library.service;
 import com.cse2006.library.model.*;
-import com.cse2006.library.repo.InMemoryStore;
+import com.cse2006.library.repo.UserStore;
 import com.cse2006.library.util.Validator;
 import java.util.Optional;
 import java.util.UUID;
 public class AuthService {
-  private final InMemoryStore store;
-  public AuthService(InMemoryStore store) { this.store = store; }
+  private final UserStore store;
+  public AuthService(UserStore store) { this.store = store; }
   public User register(String username, String password, Role role) {
     String u = username.trim();
     Validator.username(u);
@@ -24,5 +24,5 @@ public class AuthService {
     if (!user.password().equals(password)) throw new IllegalArgumentException("Wrong password");
     return user;
   }
-  public InMemoryStore store() { return store; }
+  public UserStore store() { return store; }
 }
