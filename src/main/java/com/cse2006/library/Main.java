@@ -3,16 +3,15 @@ import com.cse2006.library.model.*;
 import com.cse2006.library.repo.InMemoryStore;
 import com.cse2006.library.service.AuthService;
 import com.cse2006.library.util.Ansi;
-import java.util.Scanner;
+import com.cse2006.library.util.InputHelper;
 public class Main {
-  private final Scanner sc = new Scanner(System.in);
+  private final InputHelper in = new InputHelper();
   private final AuthService auth;
   private User current;
   public Main(AuthService auth) { this.auth = auth; }
   public static void main(String[] args) {
     InMemoryStore store = new InMemoryStore();
     AuthService auth = new AuthService(store);
-    // seed demo users
     try { auth.register("admin", "admin123", Role.ADMIN); auth.register("alice", "pass123", Role.MEMBER); } catch (Exception ignored) {}
     new Main(auth).loop();
   }
@@ -32,8 +31,7 @@ public class Main {
     System.out.println("  " + Ansi.c(Ansi.CYAN, "4.") + " Exit");
     System.out.println(Ansi.c(Ansi.DIM, "    Member registration here. Librarians are created by managers."));
     System.out.println();
-    System.out.print(Ansi.c(Ansi.YELLOW, "  Select [1-4]: "));
-    String ch = sc.nextLine().trim();
+    String ch = in.readLine(Ansi.c(Ansi.YELLOW, "  Select [1-4]: ")).trim();
     switch (ch) {
       case "1" -> doLogin();
       case "2" -> doRegister();
@@ -44,11 +42,9 @@ public class Main {
   }
   private void doLogin() {
     header("Login", null);
-    System.out.print("  Username: ");
-    String u = sc.nextLine().trim();
+    String u = in.readLine("  Username: ").trim();
     if (u.isEmpty()) { System.out.println(Ansi.c(Ansi.RED, "\n  ! Username required")); pause(); return; }
-    System.out.print("  Password: ");
-    String p = sc.nextLine();
+    String p = in.readPassword("  Password: ");
     try {
       current = auth.login(u, p);
       System.out.println(Ansi.c(Ansi.GREEN, "\n  Welcome, " + current.username() + " (" + current.role() + ")"));
@@ -62,13 +58,10 @@ public class Main {
     header("Member Registration", null);
     System.out.println(Ansi.c(Ansi.DIM, "  Managers create librarian accounts via Admin -> Manage members"));
     System.out.println();
-    System.out.print("  Choose username (3-20, letters/digits/_): ");
-    String u = sc.nextLine().trim();
+    String u = in.readLine("  Choose username (3-20, letters/digits/_): ").trim();
     if (u.isEmpty()) { System.out.println(Ansi.c(Ansi.RED, "\n  ! Username cannot be empty")); pause(); return; }
-    System.out.print("  Choose password (min 4 chars): ");
-    String p = sc.nextLine();
-    System.out.print("  Confirm password: ");
-    String c = sc.nextLine();
+    String p = in.readPassword("  Choose password (min 4 chars): ");
+    String c = in.readPassword("  Confirm password: ");
     if (!p.equals(c)) { System.out.println(Ansi.c(Ansi.RED, "\n  ! Passwords do not match")); pause(); return; }
     try {
       User created = auth.register(u, p, Role.MEMBER);
@@ -83,14 +76,14 @@ public class Main {
     header("About", null);
     System.out.println("  CSE2006 Library Management System");
     System.out.println("  Modules: User auth, Catalog, Reporting");
-    System.out.println("  Stack: Java 17, Maven, stdlib only");
+    System.out.println("  Stack: Java 17, Maven, stdlib + JLine3 for input");
     System.out.println("  Storage: in-memory now, file csv next");
     System.out.println();
     System.out.println("  Auth: public register creates MEMBER only");
     System.out.println("  Librarian accounts: Admin -> Manage members -> Add librarian");
     System.out.println();
     System.out.println(Ansi.c(Ansi.DIM, "  Press enter to go back"));
-    sc.nextLine();
+    in.readLine("");
   }
   private void dashboard() {
     if (current.role() == Role.ADMIN) adminDash();
@@ -103,8 +96,7 @@ public class Main {
     System.out.println("  " + Ansi.c(Ansi.CYAN, "3.") + " View reports (coming soon)");
     System.out.println("  " + Ansi.c(Ansi.CYAN, "4.") + " List users (" + auth.store().size() + " total)");
     System.out.println("  " + Ansi.c(Ansi.CYAN, "0.") + " Logout");
-    System.out.print(Ansi.c(Ansi.YELLOW, "\n  Select: "));
-    String ch = sc.nextLine().trim();
+    String ch = in.readLine(Ansi.c(Ansi.YELLOW, "\n  Select: ")).trim();
     switch (ch) {
       case "2" -> manageMembers();
       case "4" -> {
@@ -133,8 +125,7 @@ public class Main {
       System.out.println("  " + Ansi.c(Ansi.CYAN, "2.") + " Add member (student)");
       System.out.println("  " + Ansi.c(Ansi.CYAN, "3.") + " Add librarian (admin)");
       System.out.println("  " + Ansi.c(Ansi.CYAN, "0.") + " Back");
-      System.out.print(Ansi.c(Ansi.YELLOW, "\n  Select: "));
-      String ch = sc.nextLine().trim();
+      String ch = in.readLine(Ansi.c(Ansi.YELLOW, "\n  Select: ")).trim();
       if (ch.equals("0")) return;
       if (ch.equals("1")) {
         System.out.println();
@@ -147,13 +138,10 @@ public class Main {
       }
       if (ch.equals("2") || ch.equals("3")) {
         Role role = ch.equals("3") ? Role.ADMIN : Role.MEMBER;
-        System.out.print("  Username: ");
-        String u = sc.nextLine().trim();
+        String u = in.readLine("  Username: ").trim();
         if (u.isEmpty()) { System.out.println(Ansi.c(Ansi.RED, "\n  ! Username cannot be empty")); pause(); continue; }
-        System.out.print("  Password: ");
-        String p = sc.nextLine();
-        System.out.print("  Confirm: ");
-        String c = sc.nextLine();
+        String p = in.readPassword("  Password: ");
+        String c = in.readPassword("  Confirm: ");
         if (!p.equals(c)) { System.out.println(Ansi.c(Ansi.RED, "\n  ! Passwords do not match")); pause(); continue; }
         try {
           User created = auth.register(u, p, role);
@@ -173,8 +161,7 @@ public class Main {
     System.out.println("  " + Ansi.c(Ansi.CYAN, "2.") + " My books (coming soon)");
     System.out.println("  " + Ansi.c(Ansi.CYAN, "3.") + " Search (coming soon)");
     System.out.println("  " + Ansi.c(Ansi.CYAN, "0.") + " Logout");
-    System.out.print(Ansi.c(Ansi.YELLOW, "\n  Select: "));
-    String ch = sc.nextLine().trim();
+    String ch = in.readLine(Ansi.c(Ansi.YELLOW, "\n  Select: ")).trim();
     if (ch.equals("0")) { System.out.println(Ansi.c(Ansi.YELLOW, "\n  Logged out.\n")); current = null; }
     else {
       if (!ch.equals("1") && !ch.equals("2") && !ch.equals("3"))
@@ -198,5 +185,5 @@ public class Main {
     return " ".repeat(total) + Ansi.c(Ansi.BLUE, "|");
   }
   private void clear() { System.out.print("\u001B[2J\u001B[H"); System.out.flush(); }
-  private void pause() { System.out.print(Ansi.c(Ansi.DIM, "\n  Press enter to continue...")); sc.nextLine(); }
+  private void pause() { in.readLine(Ansi.c(Ansi.DIM, "\n  Press enter to continue...")); }
 }
