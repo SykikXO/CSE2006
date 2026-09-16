@@ -20,3 +20,20 @@ venv/
 dist/
 build/
 *.log
+target/
+*.class
+*.jar
+
+# Java
+.mvn/
+hs_err_pid*
+
+# App
+data/
+logs/
+docs/screenshots/*.png
+!docs/screenshots/.gitkeep
+
+# Local tasks - private, not committed
+TASKS.md
+tasks.local.md
