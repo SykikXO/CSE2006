@@ -54,100 +54,25 @@ Input/output structure:
 
 ## System architecture diagram
 
-```mermaid
-graph TD
-  A[Main CLI] --> B[AuthService]
-  A --> C[BookService]
-  A --> D[IssueService]
-  A --> E[ReportService]
-  B --> F[UserStore]
-  C --> G[BookStore]
-  D --> G
-  D --> H[IssueStore]
-  E --> G
-  E --> H
-  F --> I[data/users/*.csv]
-  G --> J[data/books.csv]
-  H --> K[data/issues.csv]
-```
+![System architecture](diagrams/01-architecture.png)
 
 ## Process flow and workflow diagram
 
-```mermaid
-flowchart TD
-  Start --> Login
-  Login --> Check{Login ok?}
-  Check -- No --> Login
-  Check -- Yes --> Role{Role?}
-  Role -- Admin --> A1[Manage Books]
-  Role -- Admin --> A2[Manage Members]
-  Role -- Admin --> A3[Reports]
-  Role -- Member --> M1[Browse]
-  Role -- Member --> M2[Issue]
-  Role -- Member --> M3[Return]
-  Role -- Member --> M4[My Books]
-```
+![Process flow](diagrams/02-process-flow.png)
 
 ## UML diagrams
 
 ### Use case diagram
 
-```mermaid
-graph LR
-  Admin --> UC1[Login]
-  Member --> UC1
-  Admin --> UC2[Manage Books]
-  Admin --> UC3[Manage Members]
-  Admin --> UC4[View Reports]
-  Member --> UC5[Search Books]
-  Member --> UC6[Issue Book]
-  Member --> UC7[Return Book]
-```
+![Use case diagram](diagrams/03-use-case.png)
 
 ### Class diagram
 
-```mermaid
-classDiagram
-  class User { String id; String username; String password; Role role; }
-  class Book { String id; String title; String author; int total; int available; }
-  class Issue { String id; String bookId; String username; LocalDate issued; LocalDate due; LocalDate returned; }
-  class UserStore { save(); findByUsername(); allUsers(); }
-  class BookStore { add(); findById(); search(); all(); }
-  class IssueStore { add(); findActive(); all(); overdue(); }
-  class AuthService { register(); login(); }
-  class BookService { addBook(); search(); deleteBook(); }
-  class IssueService { issueBook(); returnBook(); }
-  class ReportService { totalBooks(); overdueList(); mostBorrowed(); }
-  AuthService --> UserStore
-  BookService --> BookStore
-  IssueService --> BookStore
-  IssueService --> IssueStore
-  ReportService --> BookStore
-  ReportService --> IssueStore
-```
+![Class diagram](diagrams/04-class-diagram.png)
 
 ### Sequence diagram
 
-```mermaid
-sequenceDiagram
-  participant M as Main
-  participant A as AuthService
-  participant U as UserStore
-  M->>A: login(username, password)
-  A->>U: findByUsername()
-  U-->>A: User
-  A-->>M: success or error
-
-  participant S as IssueService
-  participant B as BookStore
-  participant I as IssueStore
-  M->>S: issueBook(user, bookId)
-  S->>B: findById()
-  S->>I: findActive()
-  S->>I: add()
-  S->>B: update()
-  S-->>M: done or error
-```
+![Sequence diagram](diagrams/05-sequence.png)
 
 ## Database and storage design
 
@@ -155,14 +80,7 @@ Files in data folder, gitignored.
 
 ### ER diagram
 
-```mermaid
-erDiagram
-  USER ||--o{ ISSUE : has
-  BOOK ||--o{ ISSUE : issued_as
-  USER { string id; string username; string password; string role; }
-  BOOK { string id; string title; string author; int total; int available; }
-  ISSUE { string id; string bookId; string username; date issued; date due; date returned; }
-```
+![ER diagram](diagrams/06-er-diagram.png)
 
 ### Schema design
 
