@@ -2,13 +2,14 @@ package com.cse2006.library;
 import com.cse2006.library.model.*;
 import com.cse2006.library.repo.*;
 import com.cse2006.library.service.AuthService;
+import com.cse2006.library.service.BookService;
 import com.cse2006.library.util.Ansi;
 import java.time.LocalDate;
 import java.util.*;
 public class Main {
   private final Scanner sc = new Scanner(System.in);
   private final AuthService auth;
-  private final BookStore books = new BookStore();
+  private final BookService books = new BookService();
   private final IssueStore issues = new IssueStore();
   private User current;
   public Main(AuthService auth) { this.auth = auth; }
@@ -143,7 +144,7 @@ public class Main {
       System.out.print(Ansi.c(Ansi.YELLOW, "\n  Select: "));
       String ch = sc.nextLine().trim();
       if (ch.equals("0")) return;
-      if (ch.equals("1")) { listBooks(books.all()); continue; }
+      if (ch.equals("1")) { listBooks(books.getAll()); continue; }
       if (ch.equals("2")) { addBook(); continue; }
       if (ch.equals("3")) { System.out.print("  Search: "); String q=sc.nextLine().trim(); listBooks(books.search(q)); continue; }
       if (ch.equals("4")) { editBook(); continue; }
@@ -164,31 +165,32 @@ public class Main {
   }
   private void addBook() {
     System.out.print("  ID (e.g. B004): "); String id=sc.nextLine().trim();
-    if (id.isEmpty()) { System.out.println(Ansi.c(Ansi.RED, "  ! ID required")); pause(); return; }
-    if (books.findById(id).isPresent()) { System.out.println(Ansi.c(Ansi.RED, "  ! ID already exists")); pause(); return; }
     System.out.print("  Title: "); String title=sc.nextLine().trim();
     System.out.print("  Author: "); String author=sc.nextLine().trim();
     System.out.print("  Copies: "); String c=sc.nextLine().trim();
-    int total; try { total=Integer.parseInt(c); if (total<1) throw new Exception(); } catch (Exception e){ System.out.println(Ansi.c(Ansi.RED,"  ! Copies must be number >=1")); pause(); return; }
-    if (title.isEmpty()||author.isEmpty()){ System.out.println(Ansi.c(Ansi.RED,"  ! Title and author required")); pause(); return; }
-    books.add(new Book(id, title, author, total, total));
-    System.out.println(Ansi.c(Ansi.GREEN,"  Added "+id)); pause();
+    int total;
+    try { total=Integer.parseInt(c); } catch(Exception e){ System.out.println(Ansi.c(Ansi.RED,"  ! Copies must be number")); pause(); return; }
+    try {
+      books.addBook(id, title, author, total);
+      System.out.println(Ansi.c(Ansi.GREEN,"  Added "+id)); 
+    } catch(Exception e){ System.out.println(Ansi.c(Ansi.RED,"  ! "+e.getMessage())); }
+    pause();
   }
   private void editBook() {
     System.out.print("  Book ID to edit: "); String id=sc.nextLine().trim();
-    Optional<Book> opt=books.findById(id);
+    Optional<Book> opt=books.getById(id);
     if (opt.isEmpty()){ System.out.println(Ansi.c(Ansi.RED,"  ! Not found")); pause(); return; }
     Book b=opt.get();
     System.out.print("  New title ["+b.title()+"]: "); String t=sc.nextLine().trim(); if (!t.isEmpty()) b.setTitle(t);
     System.out.print("  New author ["+b.author()+"]: "); String a=sc.nextLine().trim(); if (!a.isEmpty()) b.setAuthor(a);
     System.out.print("  New total ["+b.total()+"]: "); String ts=sc.nextLine().trim();
     if (!ts.isEmpty()){ try{int nt=Integer.parseInt(ts); int diff=nt-b.total(); b.setTotal(nt); b.setAvailable(b.available()+diff); if(b.available()<0) b.setAvailable(0);}catch(Exception e){System.out.println(Ansi.c(Ansi.RED,"  ! Invalid number, skipped"));}}
-    books.update(b);
+    books.updateBook(b);
     System.out.println(Ansi.c(Ansi.GREEN,"  Updated")); pause();
   }
   private void deleteBook() {
     System.out.print("  Book ID to delete: "); String id=sc.nextLine().trim();
-    if (books.delete(id)) System.out.println(Ansi.c(Ansi.GREEN,"  Deleted")); else System.out.println(Ansi.c(Ansi.RED,"  ! Not found"));
+    if (books.deleteBook(id)) System.out.println(Ansi.c(Ansi.GREEN,"  Deleted")); else System.out.println(Ansi.c(Ansi.RED,"  ! Not found"));
     pause();
   }
   private void manageMembers() {
@@ -228,9 +230,10 @@ public class Main {
   }
   private void reports() {
     header("Reports", current.username());
-    System.out.println("  Books total: " + books.count());
-    int avail = books.all().stream().mapToInt(Book::available).sum();
-    int total = books.all().stream().mapToInt(Book::total).sum();
+    List<Book> allBooks = books.getAll();
+    System.out.println("  Books total: " + allBooks.size());
+    int avail = 0; int total = 0;
+    for (Book bb : allBooks) { avail += bb.available(); total += bb.total(); }
     System.out.println("  Copies: " + avail + " available / " + total + " total");
     System.out.println("  Issues total: " + issues.all().size());
     System.out.println("  Active issues: " + issues.all().stream().filter(i->i.returned()==null).count());
@@ -245,7 +248,7 @@ public class Main {
     Map<String, Long> counts = new HashMap<>();
     for (Issue i: issues.all()) counts.put(i.bookId(), counts.getOrDefault(i.bookId(),0L)+1);
     counts.entrySet().stream().max(Map.Entry.comparingByValue()).ifPresent(e->{
-      books.findById(e.getKey()).ifPresent(b-> System.out.println("    - " + b.title() + " ("+b.id()+") borrowed " + e.getValue() + " times"));
+      books.getById(e.getKey()).ifPresent(b-> System.out.println("    - " + b.title() + " ("+b.id()+") borrowed " + e.getValue() + " times"));
     });
     if (counts.isEmpty()) System.out.println("    - none yet");
     System.out.println();
@@ -262,7 +265,7 @@ public class Main {
     System.out.print(Ansi.c(Ansi.YELLOW, "\n  Select: "));
     String ch = sc.nextLine().trim();
     switch(ch){
-      case "1" -> listBooks(books.all());
+      case "1" -> listBooks(books.getAll());
       case "2" -> { System.out.print("  Search: "); String q=sc.nextLine().trim(); listBooks(books.search(q)); }
       case "3" -> issueBook();
       case "4" -> returnBook();
@@ -273,7 +276,7 @@ public class Main {
   }
   private void issueBook() {
     System.out.print("  Book ID to issue: "); String id=sc.nextLine().trim();
-    Optional<Book> opt=books.findById(id);
+    Optional<Book> opt=books.getById(id);
     if(opt.isEmpty()){ System.out.println(Ansi.c(Ansi.RED,"  ! Book not found")); pause(); return; }
     Book b=opt.get();
     if(b.available()<=0){ System.out.println(Ansi.c(Ansi.RED,"  ! No copies available")); pause(); return; }
@@ -282,19 +285,19 @@ public class Main {
     String iid = UUID.randomUUID().toString().substring(0,6);
     LocalDate now=LocalDate.now(); LocalDate due=now.plusDays(14);
     issues.add(new Issue(iid, id, current.username(), now, due, null));
-    b.setAvailable(b.available()-1); books.update(b);
+    b.setAvailable(b.available()-1); books.updateBook(b);
     System.out.println(Ansi.c(Ansi.GREEN,"  Issued "+b.title()+" due "+due)); pause();
   }
   private void returnBook(){
     List<Issue> act=issues.activeByUser(current.username());
     if(act.isEmpty()){ System.out.println(Ansi.c(Ansi.RED,"  ! No active books")); pause(); return; }
     System.out.println("  Your books:");
-    for(Issue i: act){ books.findById(i.bookId()).ifPresent(b-> System.out.println("    - "+b.id()+" "+b.title()+" due "+i.due())); }
+    for(Issue i: act){ books.getById(i.bookId()).ifPresent(b-> System.out.println("    - "+b.id()+" "+b.title()+" due "+i.due())); }
     System.out.print("  Book ID to return: "); String id=sc.nextLine().trim();
     Optional<Issue> opt=issues.findActive(current.username(), id);
     if(opt.isEmpty()){ System.out.println(Ansi.c(Ansi.RED,"  ! Not found in your active list")); pause(); return; }
     Issue is=opt.get(); is.setReturned(LocalDate.now()); issues.update(is);
-    books.findById(id).ifPresent(b->{ b.setAvailable(b.available()+1); books.update(b); });
+    books.getById(id).ifPresent(b->{ b.setAvailable(b.available()+1); books.updateBook(b); });
     long overdue = 0;
     if(is.returned().isAfter(is.due())) overdue = java.time.temporal.ChronoUnit.DAYS.between(is.due(), is.returned());
     if(overdue>0) System.out.println(Ansi.c(Ansi.YELLOW,"  Returned late by "+overdue+" days, fine $"+(overdue*5)));
@@ -306,7 +309,7 @@ public class Main {
     System.out.println();
     if(act.isEmpty()) System.out.println("  No active books");
     else for(Issue i: act){
-      String title=books.findById(i.bookId()).map(Book::title).orElse(i.bookId());
+      String title=books.getById(i.bookId()).map(Book::title).orElse(i.bookId());
       System.out.println("  - "+title+" ("+i.bookId()+") issued "+i.issued()+" due "+i.due() + (i.isOverdue()?Ansi.c(Ansi.RED," OVERDUE"):""));
     }
     System.out.println();
