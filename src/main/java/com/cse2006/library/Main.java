@@ -3,13 +3,14 @@ import com.cse2006.library.model.*;
 import com.cse2006.library.repo.*;
 import com.cse2006.library.service.AuthService;
 import com.cse2006.library.service.BookService;
+import com.cse2006.library.service.IssueService;
 import com.cse2006.library.util.Ansi;
-import java.time.LocalDate;
 import java.util.*;
 public class Main {
   private final Scanner sc = new Scanner(System.in);
   private final AuthService auth;
   private final BookService books = new BookService();
+  private final IssueService issueService = new IssueService();
   private final IssueStore issues = new IssueStore();
   private User current;
   public Main(AuthService auth) { this.auth = auth; }
@@ -276,36 +277,26 @@ public class Main {
   }
   private void issueBook() {
     System.out.print("  Book ID to issue: "); String id=sc.nextLine().trim();
-    Optional<Book> opt=books.getById(id);
-    if(opt.isEmpty()){ System.out.println(Ansi.c(Ansi.RED,"  ! Book not found")); pause(); return; }
-    Book b=opt.get();
-    if(b.available()<=0){ System.out.println(Ansi.c(Ansi.RED,"  ! No copies available")); pause(); return; }
-    if(issues.findActive(current.username(), id).isPresent()){ System.out.println(Ansi.c(Ansi.RED,"  ! You already have this book")); pause(); return; }
-    if(issues.activeByUser(current.username()).size()>=3){ System.out.println(Ansi.c(Ansi.RED,"  ! Limit 3 books at a time")); pause(); return; }
-    String iid = UUID.randomUUID().toString().substring(0,6);
-    LocalDate now=LocalDate.now(); LocalDate due=now.plusDays(14);
-    issues.add(new Issue(iid, id, current.username(), now, due, null));
-    b.setAvailable(b.available()-1); books.updateBook(b);
-    System.out.println(Ansi.c(Ansi.GREEN,"  Issued "+b.title()+" due "+due)); pause();
+    String err = issueService.issueBook(current.username(), id);
+    if (err == null) {
+      books.getById(id).ifPresent(b -> System.out.println(Ansi.c(Ansi.GREEN,"  Issued "+b.title())));
+    } else System.out.println(Ansi.c(Ansi.RED,"  ! "+err));
+    pause();
   }
   private void returnBook(){
-    List<Issue> act=issues.activeByUser(current.username());
+    List<Issue> act=issueService.myBooks(current.username());
     if(act.isEmpty()){ System.out.println(Ansi.c(Ansi.RED,"  ! No active books")); pause(); return; }
     System.out.println("  Your books:");
     for(Issue i: act){ books.getById(i.bookId()).ifPresent(b-> System.out.println("    - "+b.id()+" "+b.title()+" due "+i.due())); }
     System.out.print("  Book ID to return: "); String id=sc.nextLine().trim();
-    Optional<Issue> opt=issues.findActive(current.username(), id);
-    if(opt.isEmpty()){ System.out.println(Ansi.c(Ansi.RED,"  ! Not found in your active list")); pause(); return; }
-    Issue is=opt.get(); is.setReturned(LocalDate.now()); issues.update(is);
-    books.getById(id).ifPresent(b->{ b.setAvailable(b.available()+1); books.updateBook(b); });
-    long overdue = 0;
-    if(is.returned().isAfter(is.due())) overdue = java.time.temporal.ChronoUnit.DAYS.between(is.due(), is.returned());
-    if(overdue>0) System.out.println(Ansi.c(Ansi.YELLOW,"  Returned late by "+overdue+" days, fine $"+(overdue*5)));
-    else System.out.println(Ansi.c(Ansi.GREEN,"  Returned on time"));
+    String res = issueService.returnBook(current.username(), id);
+    if(res.equals("Returned")) System.out.println(Ansi.c(Ansi.GREEN,"  Returned on time"));
+    else if(res.startsWith("Late")) System.out.println(Ansi.c(Ansi.YELLOW,"  "+res));
+    else System.out.println(Ansi.c(Ansi.RED,"  ! "+res));
     pause();
   }
   private void myBooks(){
-    List<Issue> act=issues.activeByUser(current.username());
+    List<Issue> act=issueService.myBooks(current.username());
     System.out.println();
     if(act.isEmpty()) System.out.println("  No active books");
     else for(Issue i: act){
