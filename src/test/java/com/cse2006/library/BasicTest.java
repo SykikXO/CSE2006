@@ -36,4 +36,37 @@ public class BasicTest {
     assertNotNull(a.login(u, "pass123"));
     assertThrows(IllegalArgumentException.class, () -> a.login(u, "wrong"));
   }
+  @Test
+  void bookServiceTest() {
+    com.cse2006.library.service.BookService bs = new com.cse2006.library.service.BookService();
+    String id = "X" + System.currentTimeMillis() % 10000;
+    bs.addBook(id, "My Book", "Me", 1);
+    assertTrue(bs.getById(id).isPresent());
+    assertTrue(bs.search("My Book").size() > 0);
+    assertTrue(bs.deleteBook(id));
+    assertFalse(bs.getById(id).isPresent());
+  }
+  @Test
+  void issueServiceTest() {
+    com.cse2006.library.service.BookService bs = new com.cse2006.library.service.BookService();
+    com.cse2006.library.service.IssueService is = new com.cse2006.library.service.IssueService();
+    com.cse2006.library.repo.UserStore us = new com.cse2006.library.repo.UserStore();
+    com.cse2006.library.service.AuthService au = new com.cse2006.library.service.AuthService(us);
+    String u = "istu" + System.currentTimeMillis() % 10000;
+    String bid = "IB" + System.currentTimeMillis() % 10000;
+    au.register(u, "pass123", Role.MEMBER);
+    bs.addBook(bid, "Issue Book", "Auth", 2);
+    assertNull(is.issueBook(u, bid));
+    String again = is.issueBook(u, bid);
+    assertTrue(again != null);
+    assertEquals(1, is.myBooks(u).size());
+    String ret = is.returnBook(u, bid);
+    assertTrue(ret.equals("Returned") || ret.startsWith("Late"));
+  }
+  @Test
+  void reportTest() {
+    com.cse2006.library.service.ReportService r = new com.cse2006.library.service.ReportService();
+    assertTrue(r.totalBooks() >= 0);
+    assertTrue(r.totalCopies() >= 0);
+  }
 }
