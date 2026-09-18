@@ -2,35 +2,36 @@
 
 ## Overview
 
-<!-- TODO: 2 to 3 sentences on what the system does, why it exists, who it is for -->
+Simple CLI app for college library. Students can search, issue and return books. Librarian can add books, see stock, and see reports. Data is saved in CSV files.
 
 ## Features
 
-<!-- TODO: fill per module -->
-
 ### User management
 
--
+- Register as member, login, role check
+- Admin can add member and librarian
 
 ### Catalog and circulation
 
--
+- Add, list, search, edit and delete books
+- Issue book if available, return with fine check
+- My books list
 
 ### Reporting and analytics
 
--
+- Total books and copies
+- Overdue list
+- Most borrowed book
 
 ## Technologies and tools
 
 - Java 17
 - Maven
-- Java standard library (java.util, java.nio.file, java.security, java.util.logging)
+- Java standard library (java.util, java.nio.file)
 - JUnit 5
-- CLI with Scanner, nicer UX via JLine3 or picocli planned
+- CLI with Scanner
 
 ## Steps to install and run
-
-<!-- TODO: replace with verified commands -->
 
 ```sh
 git clone https://github.com/SykikXO/CSE2006.git
@@ -59,20 +60,20 @@ Public registration at auth menu creates `MEMBER` only. Librarian accounts are m
 
 ## Instructions for testing
 
-<!-- TODO: verify after pom and tests exist -->
-
 ```sh
 mvn test
 ```
 
+Tests: 7 tests for validator, user register, book add/search, issue and report.
+
 ## Screenshots
 
-<!-- TODO: add after CLI runs, save to docs/screenshots/ -->
+Saved in docs/screenshots if needed. To make:
 
-- Login
-- Admin course management
-- Member borrow and return
-- Report
+```sh
+mvn exec:java
+# login as admin/admin123 and try manage books
+```
 
 ## Docs
 
