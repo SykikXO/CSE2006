@@ -4,6 +4,7 @@ import com.cse2006.library.repo.*;
 import com.cse2006.library.service.AuthService;
 import com.cse2006.library.service.BookService;
 import com.cse2006.library.service.IssueService;
+import com.cse2006.library.service.ReportService;
 import com.cse2006.library.util.Ansi;
 import java.util.*;
 public class Main {
@@ -11,6 +12,7 @@ public class Main {
   private final AuthService auth;
   private final BookService books = new BookService();
   private final IssueService issueService = new IssueService();
+  private final ReportService reports = new ReportService();
   private final IssueStore issues = new IssueStore();
   private User current;
   public Main(AuthService auth) { this.auth = auth; }
@@ -231,27 +233,19 @@ public class Main {
   }
   private void reports() {
     header("Reports", current.username());
-    List<Book> allBooks = books.getAll();
-    System.out.println("  Books total: " + allBooks.size());
-    int avail = 0; int total = 0;
-    for (Book bb : allBooks) { avail += bb.available(); total += bb.total(); }
-    System.out.println("  Copies: " + avail + " available / " + total + " total");
-    System.out.println("  Issues total: " + issues.all().size());
-    System.out.println("  Active issues: " + issues.all().stream().filter(i->i.returned()==null).count());
-    System.out.println("  Overdue: " + issues.overdue().size());
+    System.out.println("  Books total: " + reports.totalBooks());
+    System.out.println("  Copies: " + reports.availableCopies() + " available / " + reports.totalCopies() + " total");
+    System.out.println("  Issues total: " + reports.totalIssues());
+    System.out.println("  Active issues: " + reports.activeIssues());
+    List<Issue> overdue = reports.overdueList();
+    System.out.println("  Overdue: " + overdue.size());
     System.out.println();
-    if (!issues.overdue().isEmpty()){
+    if (!overdue.isEmpty()){
       System.out.println("  Overdue list:");
-      for (Issue i: issues.overdue()) System.out.println("    - " + i.username() + " has " + i.bookId() + " due " + i.due());
+      for (Issue i: overdue) System.out.println("    - " + i.username() + " has " + i.bookId() + " due " + i.due());
       System.out.println();
     }
-    System.out.println("  Most borrowed book:");
-    Map<String, Long> counts = new HashMap<>();
-    for (Issue i: issues.all()) counts.put(i.bookId(), counts.getOrDefault(i.bookId(),0L)+1);
-    counts.entrySet().stream().max(Map.Entry.comparingByValue()).ifPresent(e->{
-      books.getById(e.getKey()).ifPresent(b-> System.out.println("    - " + b.title() + " ("+b.id()+") borrowed " + e.getValue() + " times"));
-    });
-    if (counts.isEmpty()) System.out.println("    - none yet");
+    System.out.println("  Most borrowed: " + reports.mostBorrowed());
     System.out.println();
     pause();
   }
